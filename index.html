@@ -13,24 +13,6 @@
     <div id="control"></div>
     <div id="description"></div>
     <script>
-        function reducer(state, action){
-            if(state === undefined){
-                return{
-                    selected_id:1,
-                    contents:[
-                        {id:1, title:'Seoul National University', description: 'Seoul National University is...'},
-                        {id:2, title:'Korea University', description: 'Korea University is...'},
-                        {id:3, title:'Yonsei University', description: 'Yonsei University is...'}
-                    ],
-                }
-            }
-            if(action.type === 'SELECT'){
-                return Object.assign({}, state, {selected_id: action.id});
-            }
-        }
-
-        let store = Redux.createStore(reducer);
-
         function Header(){
             document.querySelector('#header').innerHTML = `
                 <header>
@@ -59,7 +41,7 @@
         function Control(){
             document.querySelector('#control').innerHTML = `
                 <ul>
-                    <li><a href="/">create</a></li>
+                    <li><a onclick="event.preventDefault(); let action = {type:'WRITE'}; store.dispatch(action);" href="/create">create</a></li>
                     <li><input type="button" value="delete"></li>
                 </ul>
             `;
@@ -67,24 +49,86 @@
 
         function Description(){
             let state = store.getState();
-            let i = 0;
-            let aTitle, aDesc;
-            while(i<state.contents.length){
-                if(state.selected_id === state.contents[i].id){
-                    aTitle = state.contents[i].title;
-                    aDesc = state.contents[i].description;
+            if(state.mode === 'create'){
+                document.querySelector('#description').innerHTML = `
+                    <article>
+                        <form onsubmit="
+                        event.preventDefault();
+                        let _title = this.title.value;
+                        let _desc = this.desc.value;
+                        store.dispatch({
+                            type:'CREATE',
+                            title:_title,
+                            description:_desc,
+                        });
+                        ">
+                            <p>
+                                <input type="text" name="title" placeholder="title">
+                            </p>
+                            <p>
+                                <textarea name="desc" placeholder="description"></textarea>
+                            </p>
+                            <p>
+                                <input type="submit">
+                            </p>
+                        </form>
+                    </article>
+                `;
+            }else if(state.mode === 'read'){
+                let i = 0;
+                let aTitle, aDesc;
+                while(i<state.contents.length){
+                    if(state.selected_id === state.contents[i].id){
+                        aTitle = state.contents[i].title;
+                        aDesc = state.contents[i].description;
+                        break;
+                    }
+                    i+=1;
                 }
-                i+=1;
+                document.querySelector('#description').innerHTML = `
+                    <article>
+                        <h3>${aTitle}</h3>
+                        <p>${aDesc}</p>
+                    </article>
+                `;
             }
-            document.querySelector('#description').innerHTML = `
-                <article>
-                    <h3>${aTitle}</h3>
-                    <p>${aDesc}</p>
-                </article>
-            `;
         };
 
+        function reducer(state, action){
+            if(state === undefined){
+                return{
+                    max_id:3,
+                    selected_id:1,
+                    mode:'read',
+                    contents:[
+                        {id:1, title:'Seoul National University', description: 'Seoul National University is...'},
+                        {id:2, title:'Korea University', description: 'Korea University is...'},
+                        {id:3, title:'Yonsei University', description: 'Yonsei University is...'}
+                    ],
+                }
+            }
+            if(action.type === 'SELECT'){
+                return Object.assign({}, state, {selected_id: action.id});
+            }else if(action.type === 'CREATE'){
+                let newMaxId = state.max_id + 1;
+                let newContents = state.contents.concat();
+                newContents.push({id:newMaxId, title:action.title, description: action.description});
+                return Object.assign({}, state, {
+                    max_id: newMaxId,
+                    contents: newContents,
+                    mode: 'read',
+                });
+            }else if(action.type === 'WRITE'){
+                return Object.assign({}, state, {
+                    mode: 'create',
+                });
+            }
+        }
+
+        let store = Redux.createStore(reducer);
+
         store.subscribe(Description);
+        store.subscribe(TOC);
 
         Header();
         TOC();

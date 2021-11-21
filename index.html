@@ -16,12 +16,16 @@
         function reducer(state, action){
             if(state === undefined){
                 return{
+                    selected_id:1,
                     contents:[
                         {id:1, title:'Seoul National University', description: 'Seoul National University is...'},
                         {id:2, title:'Korea University', description: 'Korea University is...'},
                         {id:3, title:'Yonsei University', description: 'Yonsei University is...'}
                     ],
                 }
+            }
+            if(action.type === 'SELECT'){
+                return Object.assign({}, state, {selected_id: action.id});
             }
         }
 
@@ -41,7 +45,7 @@
             let liTags = '';
             while(i<state.contents.length){
                 liTags += `
-                    <li><a onclick="event.preventDefault(); let action = {type:'SELECT', id:${state.contents[i].id}};"href="/">${state.contents[i].title}</a></li>
+                    <li><a onclick="event.preventDefault(); let action = {type:'SELECT', id:${state.contents[i].id}}; store.dispatch(action);" href="/">${state.contents[i].title}</a></li>
                 `;
                 i+=1;
             }
@@ -62,10 +66,25 @@
         }
 
         function Description(){
+            let state = store.getState();
+            let i = 0;
+            let aTitle, aDesc;
+            while(i<state.contents.length){
+                if(state.selected_id === state.contents[i].id){
+                    aTitle = state.contents[i].title;
+                    aDesc = state.contents[i].description;
+                }
+                i+=1;
+            }
             document.querySelector('#description').innerHTML = `
-                <p>Seoul National University is...</p>
+                <article>
+                    <h3>${aTitle}</h3>
+                    <p>${aDesc}</p>
+                </article>
             `;
         };
+
+        store.subscribe(Description);
 
         Header();
         TOC();
